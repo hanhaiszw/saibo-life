@@ -205,13 +205,30 @@ function addEventCard(title, desc, aiGen) {
   $('#log').scrollTop = $('#log').scrollHeight;
 }
 
+// ── Loading 动画 ──
+function showLoading() {
+  const loader = document.createElement('div');
+  loader.id = 'ai-loader';
+  loader.className = 'ai-loading';
+  loader.innerHTML = `
+    <div class="loading-bar-wrap"><div class="loading-bar"></div></div>
+    <div class="loading-text">⚡ 正在生成剧情...</div>
+    <div class="loading-hint">AI 正在根据你的状态构建事件，预计 3-5 秒</div>`;
+  $('#log').appendChild(loader);
+  $('#log').scrollTop = $('#log').scrollHeight;
+}
+
+function hideLoading() {
+  const loader = document.getElementById('ai-loader');
+  if (loader) loader.remove();
+}
+
 async function newDay() {
   if (!state.alive) return;
   $('#day-num').textContent = `第 ${state.day} 天`;
   $('#next-btn').classList.add('hidden');
   $('#choices').innerHTML = '';
 
-  // 日期标记
   const marker = document.createElement('div');
   marker.className = 'day-marker';
   marker.textContent = `▸ 第 ${state.day} 天 ◂`;
@@ -220,12 +237,14 @@ async function newDay() {
 
   let evt = null, aiGen = false;
   if (getApiKey()) {
+    showLoading();
     try {
       evt = await llmGenerateEvent(); aiGen = true;
     } catch (e) {
       console.error('LLM 失败:', e);
       addLog('⚠ AI 生成失败，使用预设事件', 'bad');
     }
+    hideLoading();
   }
   if (!evt) {
     const pool = events.filter(e => { if (state.day<3 && e.id==='ai_shard') return false; if (e.id==='corpo_raid' && state.day<2) return false; return true; });
