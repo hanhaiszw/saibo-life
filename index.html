@@ -41,6 +41,7 @@
         </div>
       </div>
       <button id="start-btn" class="neon-btn" disabled>接入赛博空间</button>
+      <button id="history-btn-start" class="ghost-btn" style="margin-top:12px;">📋 历史记录</button>
     </div>
   </div>
 
@@ -53,6 +54,7 @@
         <div class="stat"><span class="stat-icon">🔧</span><span class="stat-label">黑客</span><div class="bar-bg"><div id="hack-bar" class="bar hack"></div></div><span id="hack-text">50</span></div>
       </div>
       <div class="day-counter"><span id="day-num">第 1 天</span></div>
+      <button id="history-btn" class="ghost-btn">📋 历史记录</button>
     </header>
     <main>
       <div id="log" class="log"></div>
@@ -66,6 +68,13 @@
     <div id="end-stats"></div>
     <p id="end-epitaph"></p>
     <button id="restart-btn" class="neon-btn">重新开始</button>
+  </div>
+
+  <div id="history-screen" class="screen">
+    <h2 class="glitch" data-text="历史记录" style="font-size:32px;">历史记录</h2>
+    <div id="history-list" class="history-list"></div>
+    <div id="history-empty" class="hidden" style="color:var(--text-dim);text-align:center;padding:40px;">暂无记录，快去玩一局吧</div>
+    <button id="back-btn" class="neon-btn">返回</button>
   </div>
 </div>
 

@@ -166,3 +166,31 @@ footer { margin-top: 32px; color: var(--text-dim); font-size: 11px; z-index: 1; 
 @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
 
 .ai-badge { display: inline-block; background: rgba(0,240,255,.15); color: var(--neon-cyan); font-size: 10px; padding: 2px 8px; border-radius: 10px; margin-left: 6px; }
+
+/* ── Ghost Button ── */
+.ghost-btn {
+  background: transparent; border: 1px solid #2a2a40; border-radius: 6px;
+  color: var(--text-dim); font-family: inherit; font-size: 12px; padding: 6px 14px;
+  cursor: pointer; transition: all .3s; margin-top: 8px;
+}
+.ghost-btn:hover { border-color: var(--neon-cyan); color: var(--neon-cyan); }
+
+/* ── History Screen ── */
+.history-list { width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; max-height: 55vh; overflow-y: auto; }
+.history-card {
+  background: var(--bg-panel); border: 1px solid #1f1f35; border-radius: 8px; padding: 16px;
+  display: grid; grid-template-columns: 1fr auto; gap: 8px;
+  cursor: pointer; transition: all .3s;
+}
+.history-card:hover { border-color: var(--neon-cyan); }
+.history-card .card-name { color: var(--neon-cyan); font-size: 16px; font-weight: 700; }
+.history-card .card-date { color: var(--text-dim); font-size: 11px; }
+.history-card .card-stats { grid-column: 1 / -1; display: flex; gap: 12px; font-size: 12px; color: var(--text-dim); }
+.history-card .card-score { color: var(--neon-yellow); font-size: 20px; font-weight: 700; text-align: right; align-self: center; }
+.history-card .card-death { grid-column: 1 / -1; color: var(--neon-pink); font-size: 11px; }
+.card-action { display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
+.card-delete {
+  background: transparent; border: 1px solid transparent; color: var(--text-dim);
+  font-family: inherit; font-size: 11px; cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: all .3s;
+}
+.card-delete:hover { border-color: var(--neon-pink); color: var(--neon-pink); }

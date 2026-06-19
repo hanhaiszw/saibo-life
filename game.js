@@ -3,6 +3,41 @@
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
+// ── IndexedDB 封装 ──
+const db = await new Promise((resolve, reject) => {
+  const req = indexedDB.open('CyberLife2077', 1);
+  req.onupgradeneeded = () => {
+    const store = req.result.createObjectStore('records', { keyPath: 'id', autoIncrement: true });
+    store.createIndex('score', 'score', { unique: false });
+  };
+  req.onsuccess = () => resolve(req.result);
+  req.onerror = () => reject(req.error);
+});
+
+function saveRecord(record) {
+  return new Promise((resolve) => {
+    const tx = db.transaction('records', 'readwrite');
+    tx.objectStore('records').add(record);
+    tx.oncomplete = () => resolve();
+  });
+}
+
+function getAllRecords() {
+  return new Promise((resolve) => {
+    const tx = db.transaction('records', 'readonly');
+    const req = tx.objectStore('records').getAll();
+    req.onsuccess = () => resolve(req.result.sort((a, b) => b.score - a.score));
+  });
+}
+
+function deleteRecord(id) {
+  return new Promise((resolve) => {
+    const tx = db.transaction('records', 'readwrite');
+    tx.objectStore('records').delete(id);
+    tx.oncomplete = () => resolve();
+  });
+}
+
 // ── API Key 管理 ──
 function getApiKey() {
   return localStorage.getItem('deepseek_api_key') || '';
@@ -139,6 +174,7 @@ $('#name-input').addEventListener('input', () => {
 
 $('#start-btn').addEventListener('click', startGame);
 $('#restart-btn').addEventListener('click', restartGame);
+$('#history-btn-start').addEventListener('click', () => $('#history-btn').click());
 
 // ── 开始游戏 ──
 function startGame() {
@@ -353,12 +389,13 @@ $('#next-btn').addEventListener('click', () => {
 });
 
 // ── 游戏结束 ──
-function gameOver(epitaph) {
+async function gameOver(epitaph) {
   showScreen('end-screen');
   $('#end-epitaph').textContent = epitaph;
   $('#end-title').setAttribute('data-text', 'GAME OVER');
   $('#end-title').textContent = 'GAME OVER';
 
+  const score = state.day * 10 + state.rep + state.credits;
   const endStats = $('#end-stats');
   endStats.innerHTML = `
     <div class="stat-row"><span>代号</span><span>${state.name}</span></div>
@@ -368,8 +405,24 @@ function gameOver(epitaph) {
     <div class="stat-row"><span>信用点</span><span>${state.credits}</span></div>
     <div class="stat-row"><span>声望</span><span>${state.rep}</span></div>
     <div class="stat-row"><span>黑客技能</span><span>${state.hack}</span></div>
-    <div class="stat-row"><span>综合评分</span><span>${state.day * 10 + state.rep + state.credits}</span></div>
+    <div class="stat-row"><span>综合评分</span><span>${score}</span></div>
   `;
+
+  // 存入 IndexedDB
+  const record = {
+    name: state.name,
+    origin: state.origin,
+    originLabel: {corpo:'公司狗',hacker:'网络黑客',nomad:'废土游民'}[state.origin],
+    day: state.day,
+    hp: state.hp,
+    credits: state.credits,
+    rep: state.rep,
+    hack: state.hack,
+    score: score,
+    death: epitaph,
+    time: new Date().toLocaleString('zh-CN'),
+  };
+  await saveRecord(record);
 }
 
 // ── 切换画面 ──
@@ -377,6 +430,54 @@ function showScreen(id) {
   $$('.screen').forEach((s) => s.classList.remove('active'));
   $(`#${id}`).classList.add('active');
 }
+
+// ── 历史记录 ──
+$('#history-btn').addEventListener('click', async () => {
+  showScreen('history-screen');
+  const records = await getAllRecords();
+  const list = $('#history-list');
+  const empty = $('#history-empty');
+
+  if (records.length === 0) {
+    list.innerHTML = '';
+    empty.classList.remove('hidden');
+  } else {
+    empty.classList.add('hidden');
+    list.innerHTML = records.map((r) => `
+      <div class="history-card">
+        <div>
+          <div class="card-name">${r.name}</div>
+          <div class="card-date">${r.time}</div>
+        </div>
+        <div class="card-score">${r.score}</div>
+        <div class="card-stats">
+          <span>🏷️ ${r.originLabel}</span>
+          <span>📆 ${r.day}天</span>
+          <span>❤️ ${r.hp}</span>
+          <span>₿ ${r.credits}</span>
+          <span>⭐ ${r.rep}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span class="card-death">💀 ${r.death}</span>
+          <button class="card-delete" data-id="${r.id}">删除</button>
+        </div>
+      </div>
+    `).join('');
+
+    // 绑定删除按钮
+    list.querySelectorAll('.card-delete').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await deleteRecord(Number(btn.dataset.id));
+        $('#history-btn').click(); // 刷新列表
+      });
+    });
+  }
+});
+
+$('#back-btn').addEventListener('click', () => {
+  showScreen('start-screen');
+});
 
 // ── 重新开始 ──
 function restartGame() {
