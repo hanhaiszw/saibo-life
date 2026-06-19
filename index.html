@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>赛博人生 2077 | Cyber Life</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="crt"></div>
+
+<div id="app">
+  <div id="start-screen" class="screen active">
+    <h1 class="glitch" data-text="赛博人生 2077">赛博人生 2077</h1>
+    <p class="subtitle">在霓虹灯下的城市，每个选择都决定你的命运</p>
+    <div id="char-create">
+      <div class="input-group">
+        <label>你的代号</label>
+        <input id="name-input" type="text" maxlength="12" placeholder="输入你的赛博代号...">
+      </div>
+      <div class="input-group">
+        <label>出身背景</label>
+        <div class="origin-choices">
+          <button class="origin-btn" data-origin="corpo">
+            <span class="icon">🏢</span><strong>公司狗</strong>
+            <small>信用+30 · 黑客-10</small>
+          </button>
+          <button class="origin-btn" data-origin="hacker">
+            <span class="icon">💻</span><strong>网络黑客</strong>
+            <small>黑客+30 · 信用-10</small>
+          </button>
+          <button class="origin-btn" data-origin="nomad">
+            <span class="icon">🏍️</span><strong>废土游民</strong>
+            <small>生命+30 · 声望-10</small>
+          </button>
+        </div>
+      </div>
+      <button id="start-btn" class="neon-btn" disabled>接入赛博空间</button>
+    </div>
+  </div>
+
+  <div id="game-screen" class="screen">
+    <header>
+      <div class="stat-bar">
+        <div class="stat"><span class="stat-icon">❤️</span><span class="stat-label">生命</span><div class="bar-bg"><div id="hp-bar" class="bar hp"></div></div><span id="hp-text">100</span></div>
+        <div class="stat"><span class="stat-icon">₿</span><span class="stat-label">信用</span><div class="bar-bg"><div id="credits-bar" class="bar credits"></div></div><span id="credits-text">50</span></div>
+        <div class="stat"><span class="stat-icon">⭐</span><span class="stat-label">声望</span><div class="bar-bg"><div id="rep-bar" class="bar rep"></div></div><span id="rep-text">50</span></div>
+        <div class="stat"><span class="stat-icon">🔧</span><span class="stat-label">黑客</span><div class="bar-bg"><div id="hack-bar" class="bar hack"></div></div><span id="hack-text">50</span></div>
+      </div>
+      <div class="day-counter"><span id="day-num">第 1 天</span></div>
+    </header>
+    <main>
+      <div id="log" class="log"></div>
+      <div id="choices" class="choices"></div>
+      <button id="next-btn" class="neon-btn hidden">进入下一天 ▶</button>
+    </main>
+  </div>
+
+  <div id="end-screen" class="screen">
+    <h1 id="end-title" class="glitch" data-text="">GAME OVER</h1>
+    <div id="end-stats"></div>
+    <p id="end-epitaph"></p>
+    <button id="restart-btn" class="neon-btn">重新开始</button>
+  </div>
+</div>
+
+<footer><p>⚡ 赛博人生 2077 · GitHub Pages Demo</p></footer>
+<script src="game.js"></script>
+</body>
+</html>
