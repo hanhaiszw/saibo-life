@@ -3,6 +3,20 @@
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
+// ── API Key 管理 ──
+function getApiKey() {
+  return localStorage.getItem('deepseek_api_key') || '';
+}
+
+function setApiKey(key) {
+  localStorage.setItem('deepseek_api_key', key);
+}
+
+// 页面加载时恢复已保存的 key
+const savedKey = getApiKey();
+if (savedKey) $('#apikey-input').value = savedKey;
+$('#apikey-input').addEventListener('change', () => setApiKey($('#apikey-input').value));
+
 // ── 游戏状态 ──
 const state = {
   name: '',
@@ -128,6 +142,7 @@ $('#restart-btn').addEventListener('click', restartGame);
 
 // ── 开始游戏 ──
 function startGame() {
+  setApiKey($('#apikey-input').value.trim());
   state.name = $('#name-input').value.trim() || '无名';
   state.origin = selectedOrigin;
   const origin = origins[selectedOrigin];
@@ -146,8 +161,45 @@ function startGame() {
   newDay();
 }
 
+// ── LLM 动态生成事件 ──
+async function llmGenerateEvent() {
+  const apiKey = getApiKey();
+  const prompt = `你是赛博朋克夜之城的叙事AI。根据以下玩家状态，生成一个事件。
+
+玩家代号：${state.name}
+出身背景：${{corpo:'公司狗',hacker:'网络黑客',nomad:'废土游民'}[state.origin]}
+存活天数：第 ${state.day} 天
+当前属性：生命 ${state.hp}/100 | 信用 ${state.credits}/100 | 声望 ${state.rep}/100 | 黑客技能 ${state.hack}/100
+昨日事件：${state.log.filter(e => e.type !== 'system').slice(-3).map(e => e.text).join('；') || '无'}
+
+要求：
+1. 事件要符合赛博朋克世界观，与玩家的出身、状态、天数有呼应
+2. 提供2-3个选项，选项间要有权衡（高风险高回报 vs 保守）
+3. 属性影响值在 -25 到 +25 之间
+4. 严格返回纯 JSON（不要 markdown 代码块），格式如下：
+
+{"title":"事件标题","desc":"事件叙述（中式赛博朋克风格，2-3句）","choices":[{"text":"选项文字","effect":{"hp":0,"credits":0,"rep":0,"hack":0},"result":"执行结果描述"}...]}`;
+
+  const res = await fetch('https://api.deepseek.com/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: 'deepseek-chat',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.9,
+      max_tokens: 800,
+    }),
+  });
+
+  const data = await res.json();
+  const text = data.choices[0].message.content;
+  // 兼容 LLM 偶尔包 markdown 代码块
+  const json = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+  return JSON.parse(json);
+}
+
 // ── 每天推进 ──
-function newDay() {
+async function newDay() {
   if (!state.alive) return;
   $('#day-num').textContent = `第 ${state.day} 天`;
   $('#next-btn').classList.add('hidden');
@@ -155,16 +207,32 @@ function newDay() {
 
   addLog(`── 第 ${state.day} 天 ──`, 'system');
 
-  // 挑选随机事件
-  const pool = events.filter((e) => {
-    if (state.day < 3 && e.id === 'ai_shard') return false;
-    if (e.id === 'corpo_raid' && state.day < 2) return false;
-    return true;
-  });
-  const evt = pool[Math.floor(Math.random() * pool.length)];
+  const apiKey = getApiKey();
+  let evt = null;
 
-  addLog(evt.title, 'event');
-  addLog(evt.desc, 'system');
+  if (apiKey) {
+    addLog('⏳ 正在生成剧情...', 'system');
+    try {
+      evt = await llmGenerateEvent();
+      addLog(evt.title, 'event');
+      addLog(evt.desc + ' <span class="ai-badge">AI 生成</span>', 'system');
+    } catch (e) {
+      console.error('LLM 生成失败，使用预设事件:', e);
+      addLog('⚠ AI 生成失败，切换到预设事件', 'system');
+      evt = null;
+    }
+  }
+
+  if (!evt) {
+    const pool = events.filter((e) => {
+      if (state.day < 3 && e.id === 'ai_shard') return false;
+      if (e.id === 'corpo_raid' && state.day < 2) return false;
+      return true;
+    });
+    evt = pool[Math.floor(Math.random() * pool.length)];
+    addLog(evt.title, 'event');
+    addLog(evt.desc, 'system');
+  }
 
   renderChoices(evt);
 }

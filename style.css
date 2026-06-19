@@ -79,11 +79,14 @@ body {
 #char-create { width: 100%; max-width: 480px; }
 .input-group { margin-bottom: 24px; }
 .input-group label { display: block; color: var(--neon-cyan); font-size: 13px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 2px; }
-#name-input {
+#name-input, #apikey-input {
   width: 100%; padding: 12px 16px; background: var(--bg-panel); border: 1px solid #2a2a40;
   color: var(--neon-yellow); font-family: inherit; font-size: 16px; outline: none; transition: border-color .3s;
 }
-#name-input:focus { border-color: var(--neon-cyan); }
+#name-input:focus, #apikey-input:focus { border-color: var(--neon-cyan); }
+#apikey-input { font-size: 13px; }
+.label-hint { color: var(--text-dim); font-size: 11px; font-weight: 400; letter-spacing: 0; }
+.hint { display: block; color: var(--text-dim); font-size: 10px; margin-top: 4px; }
 
 .origin-choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .origin-btn {
@@ -155,3 +158,11 @@ main { width: 100%; flex: 1; }
 #end-epitaph { color: var(--text-dim); font-style: italic; margin-bottom: 20px; font-size: 14px; }
 
 footer { margin-top: 32px; color: var(--text-dim); font-size: 11px; z-index: 1; }
+
+/* ── Loading ── */
+.loading { text-align: center; padding: 20px; color: var(--neon-cyan); animation: pulse 1.5s infinite; }
+.loading::after { content: ' ▓▓▓'; animation: dots 1.5s infinite; }
+@keyframes dots { 0% { content: ' ░░░'; } 33% { content: ' ▓░░'; } 66% { content: ' ▓▓░'; } 100% { content: ' ▓▓▓'; } }
+@keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+
+.ai-badge { display: inline-block; background: rgba(0,240,255,.15); color: var(--neon-cyan); font-size: 10px; padding: 2px 8px; border-radius: 10px; margin-left: 6px; }
