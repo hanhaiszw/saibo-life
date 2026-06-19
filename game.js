@@ -3,24 +3,39 @@
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
-// ── IndexedDB 封装 ──
-const db = await new Promise((resolve, reject) => {
-  const req = indexedDB.open('CyberLife2077', 2);
-  req.onupgradeneeded = (e) => {
-    const db = req.result;
-    if (e.oldVersion < 1) {
-      const store = db.createObjectStore('records', { keyPath: 'id', autoIncrement: true });
-      store.createIndex('score', 'score', { unique: false });
-    }
-    if (e.oldVersion < 2) {
-      db.createObjectStore('settings', { keyPath: 'key' });
-    }
-  };
-  req.onsuccess = () => resolve(req.result);
-  req.onerror = () => reject(req.error);
-});
+// ── IndexedDB 封装（降级到 localStorage） ──
+let db = null;
+let dbOk = false;
+
+try {
+  db = await new Promise((resolve, reject) => {
+    const req = indexedDB.open('CyberLife2077', 2);
+    req.onupgradeneeded = (e) => {
+      const db = req.result;
+      if (e.oldVersion < 1) {
+        const store = db.createObjectStore('records', { keyPath: 'id', autoIncrement: true });
+        store.createIndex('score', 'score', { unique: false });
+      }
+      if (e.oldVersion < 2) {
+        db.createObjectStore('settings', { keyPath: 'key' });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  dbOk = true;
+} catch (e) {
+  console.warn('IndexedDB 不可用，降级到 localStorage:', e.message);
+}
 
 function saveRecord(record) {
+  if (!dbOk) {
+    const saved = JSON.parse(localStorage.getItem('cyberlife_records') || '[]');
+    record.id = Date.now();
+    saved.push(record);
+    localStorage.setItem('cyberlife_records', JSON.stringify(saved.slice(-50)));
+    return Promise.resolve();
+  }
   return new Promise((resolve) => {
     const tx = db.transaction('records', 'readwrite');
     tx.objectStore('records').add(record);
@@ -29,6 +44,10 @@ function saveRecord(record) {
 }
 
 function getAllRecords() {
+  if (!dbOk) {
+    const saved = JSON.parse(localStorage.getItem('cyberlife_records') || '[]');
+    return Promise.resolve(saved.sort((a, b) => b.score - a.score));
+  }
   return new Promise((resolve) => {
     const tx = db.transaction('records', 'readonly');
     const req = tx.objectStore('records').getAll();
@@ -37,6 +56,11 @@ function getAllRecords() {
 }
 
 function deleteRecord(id) {
+  if (!dbOk) {
+    const saved = JSON.parse(localStorage.getItem('cyberlife_records') || '[]');
+    localStorage.setItem('cyberlife_records', JSON.stringify(saved.filter(r => r.id !== id)));
+    return Promise.resolve();
+  }
   return new Promise((resolve) => {
     const tx = db.transaction('records', 'readwrite');
     tx.objectStore('records').delete(id);
@@ -44,8 +68,9 @@ function deleteRecord(id) {
   });
 }
 
-// ── Settings（IndexedDB） ──
+// ── Settings ──
 function dbGetSetting(key) {
+  if (!dbOk) return Promise.resolve(localStorage.getItem(`cyberlife_${key}`) || null);
   return new Promise((resolve) => {
     const tx = db.transaction('settings', 'readonly');
     const req = tx.objectStore('settings').get(key);
@@ -54,6 +79,7 @@ function dbGetSetting(key) {
 }
 
 function dbSetSetting(key, value) {
+  if (!dbOk) { localStorage.setItem(`cyberlife_${key}`, value); return Promise.resolve(); }
   return new Promise((resolve) => {
     const tx = db.transaction('settings', 'readwrite');
     tx.objectStore('settings').put({ key, value });
