@@ -216,7 +216,7 @@ async function llmGenerateEvent() {
 
 {"title":"事件标题","desc":"事件叙述（中式赛博朋克风格，2-3句）","choices":[{"text":"选项文字","effect":{"hp":0,"credits":0,"rep":0,"hack":0},"result":"执行结果描述"}...]}`;
 
-  const res = await fetch('https://api.deepseek.com/chat/completions', {
+  const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
     body: JSON.stringify({
@@ -253,8 +253,9 @@ async function newDay() {
       addLog(evt.title, 'event');
       addLog(evt.desc + ' <span class="ai-badge">AI 生成</span>', 'system');
     } catch (e) {
-      console.error('LLM 生成失败，使用预设事件:', e);
-      addLog('⚠ AI 生成失败，切换到预设事件', 'system');
+      console.error('LLM 生成失败:', e);
+      const reason = e.message.includes('Failed to fetch') ? '网络连接失败（可能是 CORS 跨域拦截）' : e.message;
+      addLog(`⚠ AI 生成失败：${reason}，切换到预设事件`, 'bad');
       evt = null;
     }
   }
