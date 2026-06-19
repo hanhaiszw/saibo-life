@@ -191,30 +191,47 @@ function startGame() {
   updateUI(); newDay();
 }
 
+// 在 log 中插入事件卡片
+function addEventCard(title, desc, aiGen) {
+  const card = document.createElement('div');
+  card.className = 'event-card';
+  card.innerHTML = `
+    <div class="title-row">
+      <span>⚡</span> ${title}
+      ${aiGen ? '<span class="ai-badge">AI</span>' : ''}
+    </div>
+    <div class="desc-row">${desc}</div>`;
+  $('#log').appendChild(card);
+  $('#log').scrollTop = $('#log').scrollHeight;
+}
+
 async function newDay() {
   if (!state.alive) return;
   $('#day-num').textContent = `第 ${state.day} 天`;
   $('#next-btn').classList.add('hidden');
   $('#choices').innerHTML = '';
-  addLog(`── 第 ${state.day} 天 ──`, 'system');
 
-  let evt = null;
+  // 日期标记
+  const marker = document.createElement('div');
+  marker.className = 'day-marker';
+  marker.textContent = `▸ 第 ${state.day} 天 ◂`;
+  $('#log').appendChild(marker);
+  $('#log').scrollTop = $('#log').scrollHeight;
+
+  let evt = null, aiGen = false;
   if (getApiKey()) {
-    addLog('⏳ 正在生成剧情...', 'system');
     try {
-      evt = await llmGenerateEvent();
-      addLog(evt.title, 'event');
-      addLog(evt.desc + ' <span class="ai-badge">AI 生成</span>', 'system');
+      evt = await llmGenerateEvent(); aiGen = true;
     } catch (e) {
       console.error('LLM 失败:', e);
-      addLog(`⚠ AI 生成失败，切换到预设事件`, 'bad');
+      addLog('⚠ AI 生成失败，使用预设事件', 'bad');
     }
   }
   if (!evt) {
     const pool = events.filter(e => { if (state.day<3 && e.id==='ai_shard') return false; if (e.id==='corpo_raid' && state.day<2) return false; return true; });
     evt = pool[Math.floor(Math.random() * pool.length)];
-    addLog(evt.title, 'event'); addLog(evt.desc, 'system');
   }
+  addEventCard(evt.title, evt.desc, aiGen);
   renderChoices(evt);
 }
 
@@ -271,7 +288,8 @@ function updateUI() {
 
 function addLog(text, type) {
   state.log.push({text, type});
-  const el = document.createElement('div'); el.className=`msg ${type}`; el.innerHTML=text;
+  const el = document.createElement('div'); el.className=`msg ${type}`;
+  el.textContent = text;
   $('#log').appendChild(el); $('#log').scrollTop = $('#log').scrollHeight;
 }
 
