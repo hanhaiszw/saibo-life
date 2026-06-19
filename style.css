@@ -84,9 +84,24 @@ body {
   color: var(--neon-yellow); font-family: inherit; font-size: 16px; outline: none; transition: border-color .3s;
 }
 #name-input:focus, #apikey-input:focus { border-color: var(--neon-cyan); }
-#apikey-input { font-size: 13px; }
+#apikey-input { font-size: 13px; flex: 1; }
+.apikey-row { display: flex; gap: 8px; }
 .label-hint { color: var(--text-dim); font-size: 11px; font-weight: 400; letter-spacing: 0; }
 .hint { display: block; color: var(--text-dim); font-size: 10px; margin-top: 4px; }
+
+.test-btn {
+  padding: 10px 14px; white-space: nowrap;
+  background: var(--bg-panel); border: 1px solid #2a2a40; border-radius: 6px;
+  color: var(--text); font-family: inherit; font-size: 12px; cursor: pointer; transition: all .3s;
+}
+.test-btn:hover:not(:disabled) { border-color: var(--neon-yellow); color: var(--neon-yellow); }
+.test-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.test-btn.testing { animation: pulse 1s infinite; border-color: var(--neon-yellow); color: var(--neon-yellow); }
+
+.api-status { display: block; margin-top: 6px; font-size: 11px; }
+.api-status.success { color: var(--neon-green); }
+.api-status.error { color: var(--neon-pink); }
+.api-status.hidden { display: none; }
 
 .origin-choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .origin-btn {

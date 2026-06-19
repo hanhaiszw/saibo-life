@@ -5,10 +5,16 @@ const $$ = (sel) => document.querySelectorAll(sel);
 
 // ── IndexedDB 封装 ──
 const db = await new Promise((resolve, reject) => {
-  const req = indexedDB.open('CyberLife2077', 1);
-  req.onupgradeneeded = () => {
-    const store = req.result.createObjectStore('records', { keyPath: 'id', autoIncrement: true });
-    store.createIndex('score', 'score', { unique: false });
+  const req = indexedDB.open('CyberLife2077', 2);
+  req.onupgradeneeded = (e) => {
+    const db = req.result;
+    if (e.oldVersion < 1) {
+      const store = db.createObjectStore('records', { keyPath: 'id', autoIncrement: true });
+      store.createIndex('score', 'score', { unique: false });
+    }
+    if (e.oldVersion < 2) {
+      db.createObjectStore('settings', { keyPath: 'key' });
+    }
   };
   req.onsuccess = () => resolve(req.result);
   req.onerror = () => reject(req.error);
@@ -38,19 +44,81 @@ function deleteRecord(id) {
   });
 }
 
+// ── Settings（IndexedDB） ──
+function dbGetSetting(key) {
+  return new Promise((resolve) => {
+    const tx = db.transaction('settings', 'readonly');
+    const req = tx.objectStore('settings').get(key);
+    req.onsuccess = () => resolve(req.result?.value ?? null);
+  });
+}
+
+function dbSetSetting(key, value) {
+  return new Promise((resolve) => {
+    const tx = db.transaction('settings', 'readwrite');
+    tx.objectStore('settings').put({ key, value });
+    tx.oncomplete = () => resolve();
+  });
+}
+
 // ── API Key 管理 ──
-function getApiKey() {
-  return localStorage.getItem('deepseek_api_key') || '';
+let _apiKey = '';
+
+async function loadApiKey() {
+  _apiKey = await dbGetSetting('deepseek_api_key') || '';
+  if (_apiKey) { $('#apikey-input').value = _apiKey; updateTestBtn(); }
+}
+await loadApiKey();
+
+async function setApiKey(key) {
+  _apiKey = key;
+  await dbSetSetting('deepseek_api_key', key);
+  updateTestBtn();
 }
 
-function setApiKey(key) {
-  localStorage.setItem('deepseek_api_key', key);
+function getApiKey() { return _apiKey; }
+
+$('#apikey-input').addEventListener('input', () => { setApiKey($('#apikey-input').value.trim()); });
+
+function updateTestBtn() {
+  $('#test-api-btn').disabled = !_apiKey;
 }
 
-// 页面加载时恢复已保存的 key
-const savedKey = getApiKey();
-if (savedKey) $('#apikey-input').value = savedKey;
-$('#apikey-input').addEventListener('change', () => setApiKey($('#apikey-input').value));
+// ── 测试 API 连接 ──
+$('#test-api-btn').addEventListener('click', async () => {
+  const btn = $('#test-api-btn');
+  const status = $('#api-status');
+  btn.textContent = '⏳ 测试中...';
+  btn.classList.add('testing');
+  status.className = 'api-status hidden';
+
+  try {
+    const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${_apiKey}` },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [{ role: 'user', content: '回复一个字：通' }],
+        max_tokens: 4,
+      }),
+    });
+
+    if (res.ok) {
+      status.textContent = '✅ 连接成功！DeepSeek API 可用';
+      status.className = 'api-status success';
+    } else {
+      const err = await res.json().catch(() => ({}));
+      status.textContent = `❌ API 返回错误 (${res.status})：${err.error?.message || '未知错误'}`;
+      status.className = 'api-status error';
+    }
+  } catch (e) {
+    status.textContent = `❌ 网络请求失败：${e.message.includes('Failed to fetch') ? 'CORS 跨域拦截，浏览器无法直接调 DeepSeek API' : e.message}`;
+    status.className = 'api-status error';
+  }
+
+  btn.textContent = '🔍 测试连接';
+  btn.classList.remove('testing');
+});
 
 // ── 游戏状态 ──
 const state = {

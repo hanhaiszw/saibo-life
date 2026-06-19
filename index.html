@@ -20,7 +20,11 @@
       </div>
       <div class="input-group">
         <label>DeepSeek API Key <span class="label-hint">（可选，填入后 AI 动态生成剧情）</span></label>
-        <input id="apikey-input" type="password" placeholder="sk-..." autocomplete="off">
+        <div class="apikey-row">
+          <input id="apikey-input" type="password" placeholder="sk-..." autocomplete="off">
+          <button id="test-api-btn" class="test-btn" disabled>🔍 测试连接</button>
+        </div>
+        <span id="api-status" class="api-status hidden"></span>
         <small class="hint">Key 只存你浏览器本地，不上传任何服务器</small>
       </div>
       <div class="input-group">
